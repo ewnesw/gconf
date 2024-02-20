@@ -6,18 +6,16 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func help(status int){
-	fmt.Println("example: gconf add <path>")
-	os.Exit(status)
-}
-
 func argParser(w *fsnotify.Watcher,arg []string){
 	switch arg[0]{
 		case "help":
-			if len(arg)>1{
-				help(1)
+			larg := len(arg[1:])
+			if larg==0{
+				help("",0)
+			}else if larg==1 && arg[1]=="add"{
+				help("add",0)
 			}else{
-				help(0)
+				help("",1)
 			}
 		case "add":
 			if len(arg[1:])>1{
@@ -29,13 +27,13 @@ func argParser(w *fsnotify.Watcher,arg []string){
 			}
 		default:
 			fmt.Println("unmatching argument")
-			help(1)
+			help("",1)
 	}
 }
 
 func argHandler(w *fsnotify.Watcher) {
 	if len(os.Args[1:]) == 0{
-		help(0)
+		help("",0)
 	}else{
 		argParser(w,os.Args[1:])
 	}
