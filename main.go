@@ -6,22 +6,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"log"
 	"os"
-	"strings"
 )
 
-func errorCheck(err error){
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
-}
-
-func errorCheckFatal(err error){
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
-}
 
 func pushUpdate(directory string,commit_msg string){
 	r, err := git.PlainOpen(directory)
@@ -41,15 +27,20 @@ func pushUpdate(directory string,commit_msg string){
 
 }
 
-func formatPath(path string) []string{
-	return strings.Split(path,"/")
+func addPath(w *fsnotify.Watcher, path string){
+	err := w.Add(path)
+	errorCheck(err)	
+	log.Println(w.WatchList())
 }
+
 
 func main() {
 	watcher, err := fsnotify.NewWatcher()
 	errorCheckFatal(err)
 
+	argHandler(watcher)
 	defer watcher.Close()
+
 
 	go func() {
 		for {
@@ -68,9 +59,7 @@ func main() {
 					errorCheck(err)	
 					dir := fileinfo.IsDir()
 					if dir {
-						watcher.Add(event.Name)
-						errorCheck(err)	
-						log.Println(watcher.WatchList())
+						addPath(watcher, event.Name)
 					}
 					log.Println("created file:", event.Name, dir)
 				}
@@ -82,9 +71,6 @@ func main() {
 			}
 		}
 	}()
-
-	err = watcher.Add("./test")
-	errorCheckFatal(err)	
-
+	
 	<-make(chan struct{})
 }
