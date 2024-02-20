@@ -33,44 +33,44 @@ func addPath(w *fsnotify.Watcher, path string){
 	log.Println(w.WatchList())
 }
 
+func watchLoop(w *fsnotify.Watcher){
+	for {
+		select {
+		case event, ok := <-w.Events:
+			if !ok {
+				return
+			}
+			log.Println("event:", event)
+			if event.Has(fsnotify.Write) {
+				log.Println("modified file:", event.Name)
+				paths := formatPath(event.Name)
+				pushUpdate(paths[0],paths[len(paths)-1])
+			} else if event.Has(fsnotify.Create) {
+				fileinfo, err := os.Stat(event.Name)
+				errorCheck(err)	
+				dir := fileinfo.IsDir()
+				if dir {
+					addPath(w, event.Name)
+				}
+				log.Println("created file:", event.Name, dir)
+			}
+		case err, ok := <-w.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
+	}
+}
 
 func main() {
 	watcher, err := fsnotify.NewWatcher()
 	errorCheckFatal(err)
 
-	argHandler(watcher)
 	defer watcher.Close()
-
-
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				log.Println("event:", event)
-				if event.Has(fsnotify.Write) {
-					log.Println("modified file:", event.Name)
-					paths := formatPath(event.Name)
-					pushUpdate(paths[0],paths[len(paths)-1])
-				} else if event.Has(fsnotify.Create) {
-					fileinfo, err := os.Stat(event.Name)
-					errorCheck(err)	
-					dir := fileinfo.IsDir()
-					if dir {
-						addPath(watcher, event.Name)
-					}
-					log.Println("created file:", event.Name, dir)
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("error:", err)
-			}
-		}
-	}()
 	
+	go watchLoop(watcher)
+
+	argHandler(watcher)
 	<-make(chan struct{})
 }

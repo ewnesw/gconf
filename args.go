@@ -21,8 +21,6 @@ func argParser(w *fsnotify.Watcher,arg []string){
 			}
 		case "add":
 			if len(arg[1:])>1{
-				fmt.Println(len(arg[1:]))
-				fmt.Println(arg[1:])
 				for i := 0;  i< len(arg[1:]); i++ {
     					addPath(w,arg[i+1])
     				}
