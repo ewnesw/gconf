@@ -25,6 +25,8 @@ func argParser(w *fsnotify.Watcher,arg []string){
     			}else{
 				addPath(w,arg[1])	
 			}
+		case "init":
+			checkSetUp()	
 		default:
 			fmt.Println("unmatching argument")
 			help("",1)

@@ -10,6 +10,7 @@ import (
 
 
 func pushUpdate(directory string,commit_msg string){
+	fmt.Println(directory)
 	r, err := git.PlainOpen(directory)
 	errorCheck(err)	
 	w, err := r.Worktree()
@@ -44,7 +45,7 @@ func watchLoop(w *fsnotify.Watcher){
 			if event.Has(fsnotify.Write) {
 				log.Println("modified file:", event.Name)
 				paths := formatPath(event.Name)
-				pushUpdate(paths[0],paths[len(paths)-1])
+				fmt.Println(paths)
 			} else if event.Has(fsnotify.Create) {
 				fileinfo, err := os.Stat(event.Name)
 				errorCheck(err)	
