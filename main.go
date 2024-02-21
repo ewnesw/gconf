@@ -8,11 +8,10 @@ import (
 	"os"
 )
 
-
-func pushUpdate(directory string,commit_msg string){
+func pushUpdate(directory string, commit_msg string) {
 	fmt.Println(directory)
 	r, err := git.PlainOpen(directory)
-	errorCheck(err)	
+	errorCheck(err)
 	w, err := r.Worktree()
 	errorCheck(err)
 	_, err = w.Add(".")
@@ -20,21 +19,20 @@ func pushUpdate(directory string,commit_msg string){
 	status, err := w.Status()
 	errorCheck(err)
 	fmt.Println(status)
-	_, err = w.Commit(commit_msg,&git.CommitOptions{})
+	_, err = w.Commit(commit_msg, &git.CommitOptions{})
 	errorCheck(err)
-	
 	err = r.Push(&git.PushOptions{})
 	errorCheck(err)
 
 }
 
-func addPath(w *fsnotify.Watcher, path string){
+func addPath(w *fsnotify.Watcher, path string) {
 	err := w.Add(path)
-	errorCheck(err)	
+	errorCheck(err)
 	log.Println(w.WatchList())
 }
 
-func watchLoop(w *fsnotify.Watcher){
+func watchLoop(w *fsnotify.Watcher) {
 	for {
 		select {
 		case event, ok := <-w.Events:
@@ -48,7 +46,7 @@ func watchLoop(w *fsnotify.Watcher){
 				fmt.Println(paths)
 			} else if event.Has(fsnotify.Create) {
 				fileinfo, err := os.Stat(event.Name)
-				errorCheck(err)	
+				errorCheck(err)
 				dir := fileinfo.IsDir()
 				if dir {
 					addPath(w, event.Name)
@@ -69,7 +67,7 @@ func main() {
 	errorCheckFatal(err)
 
 	defer watcher.Close()
-	
+
 	go watchLoop(watcher)
 
 	argHandler(watcher)

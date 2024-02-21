@@ -5,35 +5,32 @@ import (
 	"os"
 )
 
-func askCreation() bool{
+func askCreation() bool {
 	var rep rune
 	fmt.Println("gconf about to create .gconf/backup in your home directory, continue ? [Y/n]")
-	for{
+	for {
 		_, err := fmt.Scanf("%c", &rep)
 		errorCheckFatal(err)
 		if rep == rune('y') {
-   			return true
- 		}else if rep == rune('n'){
+			return true
+		} else if rep == rune('n') {
 			return false
-		}else{
+		} else {
 			fmt.Println("pls enter y or n")
 		}
 	}
 }
 
-func checkSetUp(){
+func checkSetUp() {
 	user := getUser()
-	if !checkDir(user,".gconf/backup"){
-		if askCreation(){
-			createDir(user,".gconf/backup")
-			os.Exit(0)
-		}else{
+	if !checkDir(user, ".gconf/backup") {
+		if askCreation() {
+			createDir(user, ".gconf/backup")
+		} else {
 			fmt.Println("Aborting")
 			os.Exit(0)
 		}
-	}else{
+	} else {
 		fmt.Println("Everything is fine here")
-		os.Exit(0)
 	}
 }
-
