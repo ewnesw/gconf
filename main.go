@@ -8,6 +8,7 @@ import (
 	"os"
 	"io"
 	"sync"
+	"strings"
 )
 
 func pushUpdate(directory string, commit_msg string) {
@@ -40,10 +41,12 @@ func pushUpdate(directory string, commit_msg string) {
 
 }
 
-func copyfile(dirpath string, filename string){
+func copyfile(filepath string){
+	temp := strings.Split(filepath,"/")
+	filename := temp[len(temp)-1]
 	fmt.Println("copying " + filename)
 	user := getUser()
-	src,err := os.Open(dirpath)
+	src,err := os.Open(filepath[:len(filepath)-len(filename)])
 	if err!=nil{
 		fmt.Println(err)
 		return
@@ -101,10 +104,10 @@ func copyDir(path string){
 	}
 	for _,v := range fl {
 		wg.Add(1)
-		go func(dirpath string, filename string){
+		go func(filepath string){
 			defer wg.Done()
-			copyfile(dirpath,filename)
-		}(path,v)
+			copyfile(filepath)
+		}(path+"/"+v)
 	}
 	wg.Wait()
 }
