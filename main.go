@@ -46,7 +46,7 @@ func copyfile(filepath string){
 	filename := temp[len(temp)-1]
 	fmt.Println("copying " + filename)
 	user := getUser()
-	src,err := os.Open(filepath[:len(filepath)-len(filename)])
+	src,err := os.Open(filepath)
 	if err!=nil{
 		fmt.Println(err)
 		return
