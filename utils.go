@@ -8,13 +8,6 @@ import (
 	"strings"
 )
 
-func errorCheck(err error) {
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
-
 func errorCheckFatal(err error) {
 	if err != nil {
 		log.Fatal(err)
