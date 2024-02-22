@@ -41,7 +41,7 @@ func pushUpdate(directory string, commit_msg string) {
 
 }
 
-func copyfile(filepath string){
+func copyfile(filepath string) error{
 	temp := strings.Split(filepath,"/")
 	filename := temp[len(temp)-1]
 	fmt.Println("copying " + filename)
@@ -49,29 +49,30 @@ func copyfile(filepath string){
 	src,err := os.Open(filepath)
 	if err!=nil{
 		fmt.Println(err)
-		return
+		return err
 	}
 	defer  src.Close()
 
 	dst,err :=  os.Create(user.HomeDir+"/.gconf/backup/"+filename)
 	if err!=nil{
 		fmt.Println(err)
-		return
+		return err
 	}
 	defer  dst.Close()
 
 	 _, err = io.Copy(dst, src) 
 	if err!=nil{
 		fmt.Println(err)
-		return
+		return err
 	}
 
     	err = dst.Sync()
 	if err!=nil{
 		fmt.Println(err)
-		return
+		return err
 	}
 	fmt.Println("done")
+	return nil
 }
 
 func lookupDir(path string) ([]string,error){
@@ -95,6 +96,22 @@ func lookupDir(path string) ([]string,error){
 	return filelist,nil
 }
 
+func checkPerm(filepath string){
+	user := getUser()
+	srcinfo, err := os.Stat(filepath)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(srcinfo.Mode())
+	tmp := strings.Split(filepath,"/")
+	err = os.Chmod(user.HomeDir+"/.gconf/backup/"+tmp[len(tmp)-1],srcinfo.Mode())
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+}
+
 func copyDir(path string){
 	var wg sync.WaitGroup
 	fl, err := lookupDir(path)
@@ -106,7 +123,9 @@ func copyDir(path string){
 		wg.Add(1)
 		go func(filepath string){
 			defer wg.Done()
-			copyfile(filepath)
+			if copyfile(filepath)==nil{
+				checkPerm(filepath)
+			}
 		}(path+"/"+v)
 	}
 	wg.Wait()
