@@ -6,30 +6,118 @@ import (
 	"github.com/go-git/go-git/v5"
 	"log"
 	"os"
+	"io"
+	"sync"
 )
 
 func pushUpdate(directory string, commit_msg string) {
 	fmt.Println(directory)
 	r, err := git.PlainOpen(directory)
-	errorCheck(err)
+	if err!=nil{
+		return
+	}
 	w, err := r.Worktree()
-	errorCheck(err)
+	if err!=nil{
+		return
+	}
 	_, err = w.Add(".")
-	errorCheck(err)
+	if err!=nil{
+		return
+	}
 	status, err := w.Status()
-	errorCheck(err)
+	if err!=nil{
+		return
+	}
 	fmt.Println(status)
 	_, err = w.Commit(commit_msg, &git.CommitOptions{})
-	errorCheck(err)
+	if err!=nil{
+		return
+	}
 	err = r.Push(&git.PushOptions{})
-	errorCheck(err)
+	if err!=nil{
+		return
+	}
 
 }
 
+func copyfile(dirpath string, filename string){
+	fmt.Println("copying " + filename)
+	user := getUser()
+	src,err := os.Open(dirpath)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	defer  src.Close()
+
+	dst,err :=  os.Create(user.HomeDir+"/.gconf/backup/"+filename)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	defer  dst.Close()
+
+	 _, err = io.Copy(dst, src) 
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+
+    	err = dst.Sync()
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("done")
+}
+
+func lookupDir(path string) ([]string,error){
+	var filelist []string
+	f, err := os.Open(path)
+	if err!=nil{
+		fmt.Println(err)
+		return nil,err
+	}
+    	files, err := f.Readdir(0)
+	if err!=nil{
+		fmt.Println(err)
+		return nil,err
+	}
+    	for _,v := range files {
+		if !v.IsDir(){
+			filelist = append(filelist,v.Name())
+		}
+    	}
+	fmt.Println(filelist)
+	return filelist,nil
+}
+
+func copyDir(path string){
+	var wg sync.WaitGroup
+	fl, err := lookupDir(path)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	for _,v := range fl {
+		wg.Add(1)
+		go func(dirpath string, filename string){
+			defer wg.Done()
+			copyfile(dirpath,filename)
+		}(path,v)
+	}
+	wg.Wait()
+}
+
+
 func addPath(w *fsnotify.Watcher, path string) {
 	err := w.Add(path)
-	errorCheck(err)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
 	log.Println(w.WatchList())
+	copyDir(path)
 }
 
 func watchLoop(w *fsnotify.Watcher) {
@@ -46,7 +134,10 @@ func watchLoop(w *fsnotify.Watcher) {
 				fmt.Println(paths)
 			} else if event.Has(fsnotify.Create) {
 				fileinfo, err := os.Stat(event.Name)
-				errorCheck(err)
+				if err!=nil{
+					fmt.Println(err)
+					return
+				}
 				dir := fileinfo.IsDir()
 				if dir {
 					addPath(w, event.Name)
