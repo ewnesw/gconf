@@ -6,9 +6,9 @@ import (
 	"github.com/go-git/go-git/v5"
 	"log"
 	"os"
+	"os/user"
 	"io"
 	"sync"
-	"strings"
 )
 
 func pushUpdate(directory string, commit_msg string) {
@@ -41,38 +41,51 @@ func pushUpdate(directory string, commit_msg string) {
 
 }
 
-func copyfile(filepath string) error{
-	temp := strings.Split(filepath,"/")
-	filename := temp[len(temp)-1]
+func checkPerm(user *user.User, filename string, filepath string){
+	srcinfo, err := os.Stat(filepath)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(srcinfo.Mode())
+	err = os.Chmod(user.HomeDir+"/.gconf/backup/"+filename,srcinfo.Mode())
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+}
+
+func copyfile(filepath string) {
+	_,filename := formatPath(filepath)
 	fmt.Println("copying " + filename)
 	user := getUser()
 	src,err := os.Open(filepath)
 	if err!=nil{
 		fmt.Println(err)
-		return err
+		return
 	}
 	defer  src.Close()
 
 	dst,err :=  os.Create(user.HomeDir+"/.gconf/backup/"+filename)
 	if err!=nil{
 		fmt.Println(err)
-		return err
+		return
 	}
 	defer  dst.Close()
 
 	 _, err = io.Copy(dst, src) 
 	if err!=nil{
 		fmt.Println(err)
-		return err
+		return
 	}
 
     	err = dst.Sync()
 	if err!=nil{
 		fmt.Println(err)
-		return err
+		return
 	}
-	fmt.Println("done")
-	return nil
+	fmt.Println("done copying checking perm")
+	checkPerm(user,filename,filepath)
 }
 
 func lookupDir(path string) ([]string,error){
@@ -96,21 +109,6 @@ func lookupDir(path string) ([]string,error){
 	return filelist,nil
 }
 
-func checkPerm(filepath string){
-	user := getUser()
-	srcinfo, err := os.Stat(filepath)
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(srcinfo.Mode())
-	tmp := strings.Split(filepath,"/")
-	err = os.Chmod(user.HomeDir+"/.gconf/backup/"+tmp[len(tmp)-1],srcinfo.Mode())
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
-}
 
 func copyDir(path string){
 	var wg sync.WaitGroup
@@ -123,9 +121,7 @@ func copyDir(path string){
 		wg.Add(1)
 		go func(filepath string){
 			defer wg.Done()
-			if copyfile(filepath)==nil{
-				checkPerm(filepath)
-			}
+			copyfile(filepath)
 		}(path+"/"+v)
 	}
 	wg.Wait()
@@ -152,8 +148,9 @@ func watchLoop(w *fsnotify.Watcher) {
 			log.Println("event:", event)
 			if event.Has(fsnotify.Write) {
 				log.Println("modified file:", event.Name)
-				paths := formatPath(event.Name)
-				fmt.Println(paths)
+				dirpath,filename := formatPath(event.Name)
+				fmt.Println(dirpath,filename)
+				copyfile(event.Name)
 			} else if event.Has(fsnotify.Create) {
 				fileinfo, err := os.Stat(event.Name)
 				if err!=nil{
@@ -163,6 +160,8 @@ func watchLoop(w *fsnotify.Watcher) {
 				dir := fileinfo.IsDir()
 				if dir {
 					addPath(w, event.Name)
+				}else{
+					copyfile(event.Name)
 				}
 				log.Println("created file:", event.Name, dir)
 			}

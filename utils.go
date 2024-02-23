@@ -14,8 +14,9 @@ func errorCheckFatal(err error) {
 	}
 }
 
-func formatPath(path string) []string {
-	return strings.Split(path, "/")
+func formatPath(path string) (dirpath string,filename string) {
+	temp := strings.Split(path, "/")
+	return path[:len(path)-len(temp[len(temp)-1])], temp[len(temp)-1]
 }
 
 func help(cmd string, status int) {
