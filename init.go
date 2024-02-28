@@ -1,19 +1,22 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func askCreation() bool {
-	var rep rune
+	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("gconf about to create .gconf/backup in your home directory, continue ? [Y/n]")
 	for {
-		_, err := fmt.Scanf("%c", &rep)
+		rep, err := reader.ReadString('\n')
 		errorCheckFatal(err)
-		if rep == rune('y') {
+		rep = strings.TrimSuffix(rep, "\n")
+		if rep == "" || rep == "y" {
 			return true
-		} else if rep == rune('n') {
+		} else if rep == "n" {
 			return false
 		} else {
 			fmt.Println("pls enter y or n")
