@@ -18,9 +18,8 @@ func errorCheckFatal(err error) {
 func getDirFile(path string) (dir string,filename string,err error) {
 	if path[0] != '/'{
 		return path,path,errors.New("path must start with '/'")
-	}else if path[len(path)-1]=='/'{
-		path = path[:len(path)-1]
 	}
+	path = formatPath(path)
 	temp := strings.Split(path, "/")
 	if len(temp)==2{
 		return "", temp[len(temp)-1],nil
