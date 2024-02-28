@@ -22,10 +22,10 @@ func argParser(w *fsnotify.Watcher, arg []string) {
 		checkSetUp()
 		if len(arg[1:]) > 1 {
 			for i := 0; i < len(arg[1:]); i++ {
-				addPath(w, arg[i+1])
+				addPath(w, formatPath(arg[i+1]))
 			}
 		} else {
-			addPath(w, arg[1])
+			addPath(w, formatPath(arg[1]))
 		}
 
 	case "init":

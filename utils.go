@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"errors"
 )
 
 func errorCheckFatal(err error) {
@@ -14,9 +15,24 @@ func errorCheckFatal(err error) {
 	}
 }
 
-func formatPath(path string) (dirpath string,filename string) {
+func getDirFile(path string) (dir string,filename string,err error) {
+	if path[0] != '/'{
+		return path,path,errors.New("path must start with '/'")
+	}else if path[len(path)-1]=='/'{
+		path = path[:len(path)-1]
+	}
 	temp := strings.Split(path, "/")
-	return path[:len(path)-len(temp[len(temp)-1])], temp[len(temp)-1]
+	if len(temp)==2{
+		return "", temp[len(temp)-1],nil
+	}
+	return "/"+temp[len(temp)-2],temp[len(temp)-1],nil 
+}
+
+func formatPath(path string) string{
+	if path[len(path)-1]=='/'{ 
+		return path[:len(path)-1]
+	}
+	return path
 }
 
 func help(cmd string, status int) {
@@ -36,17 +52,17 @@ func getUser() *user.User {
 	return user
 }
 
-func checkDir(user *user.User, dir string) bool {
-	_, err := os.Stat(user.HomeDir + "/" + dir)
+func checkDir(dirpath string) bool {
+	_, err := os.Stat(dirpath)
 	if os.IsNotExist(err) {
-		fmt.Println("missing  " + dir + " directory")
+		fmt.Println("missing  " + dirpath + " directory")
 		return false
 	}
 	return true
 }
 
-func createDir(user *user.User, path string) {
-	err := os.MkdirAll(user.HomeDir+"/"+path, 0755)
+func createDir(dirpath string) {
+	err := os.MkdirAll(dirpath, 0755)
 	errorCheckFatal(err)
-	fmt.Println("created " + user.HomeDir + path)
+	fmt.Println("created " + dirpath)
 }

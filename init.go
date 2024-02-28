@@ -23,9 +23,9 @@ func askCreation() bool {
 
 func checkSetUp() {
 	user := getUser()
-	if !checkDir(user, ".gconf/backup") {
+	if !checkDir(user.HomeDir+"/.gconf/backup") {
 		if askCreation() {
-			createDir(user, ".gconf/backup")
+			createDir(user.HomeDir+"/.gconf/backup")
 		} else {
 			fmt.Println("Aborting")
 			os.Exit(0)

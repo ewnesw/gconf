@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-git/go-git/v5"
 	"log"
 	"os"
 	"os/user"
@@ -11,44 +10,14 @@ import (
 	"sync"
 )
 
-func pushUpdate(directory string, commit_msg string) {
-	fmt.Println(directory)
-	r, err := git.PlainOpen(directory)
-	if err!=nil{
-		return
-	}
-	w, err := r.Worktree()
-	if err!=nil{
-		return
-	}
-	_, err = w.Add(".")
-	if err!=nil{
-		return
-	}
-	status, err := w.Status()
-	if err!=nil{
-		return
-	}
-	fmt.Println(status)
-	_, err = w.Commit(commit_msg, &git.CommitOptions{})
-	if err!=nil{
-		return
-	}
-	err = r.Push(&git.PushOptions{})
-	if err!=nil{
-		return
-	}
-
-}
-
-func checkPerm(user *user.User, filename string, filepath string){
+func checkPerm(user *user.User, dirfile string, filepath string){
 	srcinfo, err := os.Stat(filepath)
 	if err!=nil{
 		fmt.Println(err)
 		return
 	}
 	fmt.Println(srcinfo.Mode())
-	err = os.Chmod(user.HomeDir+"/.gconf/backup/"+filename,srcinfo.Mode())
+	err = os.Chmod(user.HomeDir+"/.gconf/backup"+dirfile,srcinfo.Mode())
 	if err!=nil{
 		fmt.Println(err)
 		return
@@ -56,8 +25,12 @@ func checkPerm(user *user.User, filename string, filepath string){
 }
 
 func copyfile(filepath string) {
-	_,filename := formatPath(filepath)
-	fmt.Println("copying " + filename)
+	dir, filename, err := getDirFile(filepath)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(filepath + "copying " + dir + "/" + filename)
 	user := getUser()
 	src,err := os.Open(filepath)
 	if err!=nil{
@@ -66,7 +39,7 @@ func copyfile(filepath string) {
 	}
 	defer  src.Close()
 
-	dst,err :=  os.Create(user.HomeDir+"/.gconf/backup/"+filename)
+	dst,err :=  os.Create(user.HomeDir+"/.gconf/backup"+dir + "/" + filename)
 	if err!=nil{
 		fmt.Println(err)
 		return
@@ -85,7 +58,7 @@ func copyfile(filepath string) {
 		return
 	}
 	fmt.Println("done copying checking perm")
-	checkPerm(user,filename,filepath)
+	checkPerm(user,dir + "/" + filename,filepath)
 }
 
 func lookupDir(path string) ([]string,error){
@@ -117,6 +90,13 @@ func copyDir(path string){
 		fmt.Println(err)
 		return
 	}
+	_, filename,err:=getDirFile(path) // we need the name of the path given that's why wee treat it as a file not a directory
+	if err!=nil{	                  // kinda dogshit need to work on it and var/func names
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("path: " + path + "dir: " + filename)
+	createDir(getUser().HomeDir +"/.gconf/backup/"+filename)
 	for _,v := range fl {
 		wg.Add(1)
 		go func(filepath string){
@@ -148,8 +128,12 @@ func watchLoop(w *fsnotify.Watcher) {
 			log.Println("event:", event)
 			if event.Has(fsnotify.Write) {
 				log.Println("modified file:", event.Name)
-				dirpath,filename := formatPath(event.Name)
-				fmt.Println(dirpath,filename)
+				dir,filename,err := getDirFile(event.Name)
+				if err != nil{
+					fmt.Println(err)
+					return
+				}
+				fmt.Println(dir+"/"+filename)
 				copyfile(event.Name)
 			} else if event.Has(fsnotify.Create) {
 				fileinfo, err := os.Stat(event.Name)
