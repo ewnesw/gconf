@@ -14,7 +14,7 @@ func addPath(w *fsnotify.Watcher, path string) {
 		return
 	}
 	log.Println(w.WatchList())
-	copyDir(path)
+	copyDir(path,w)
 }
 
 func watchLoop(w *fsnotify.Watcher) {

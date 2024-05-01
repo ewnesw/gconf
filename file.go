@@ -1,13 +1,14 @@
-
 package main
 
 import (
 	"fmt"
 	"os"
+	"github.com/fsnotify/fsnotify"
 	"os/user"
 	"io"
 	"sync"
 )
+
 
 func checkPerm(user *user.User, dirfile string, filepath string){
 	srcinfo, err := os.Stat(filepath)
@@ -60,7 +61,7 @@ func copyfile(filepath string) {
 	checkPerm(user,dir + "/" + filename,filepath)
 }
 
-func lookupDir(path string) ([]string,error){
+func lookupDir(path string, w *fsnotify.Watcher) ([]string,error){
 	var filelist []string
 	f, err := os.Open(path)
 	if err!=nil{
@@ -75,6 +76,9 @@ func lookupDir(path string) ([]string,error){
     	for _,v := range files {
 		if !v.IsDir(){
 			filelist = append(filelist,v.Name())
+		}else{
+			fmt.Println("lookup " + path + "/" +v.Name())
+			addPath(w,path + "/" +v.Name())
 		}
     	}
 	fmt.Println(filelist)
@@ -82,9 +86,9 @@ func lookupDir(path string) ([]string,error){
 }
 
 
-func copyDir(path string){
+func copyDir(path string, w *fsnotify.Watcher){
 	var wg sync.WaitGroup
-	fl, err := lookupDir(path)
+	fl, err := lookupDir(path,w)
 	if err!=nil{
 		fmt.Println(err)
 		return
@@ -94,7 +98,7 @@ func copyDir(path string){
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("path: " + path + "dir: " + filename)
+	fmt.Println("path: " + path + " dir: " + filename)
 	createDir(getUser().HomeDir +"/.gconf/backup/"+filename)
 	for _,v := range fl {
 		wg.Add(1)
