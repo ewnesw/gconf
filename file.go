@@ -94,10 +94,7 @@ func copyDir(path string, w *fsnotify.Watcher){
 		return
 	}
 	_, filename,err:=getDirFile(path) // we need the name of the path given that's why wee treat it as a file not a directory
-	if err!=nil{	                  // kinda dogshit need to work on it and var/func names
-		fmt.Println(err)
-		return
-	}
+	errorCheckFatal(err)
 	fmt.Println("path: " + path + " dir: " + filename)
 	createDir(getUser().HomeDir +"/.gconf/backup/"+filename)
 	for _,v := range fl {
